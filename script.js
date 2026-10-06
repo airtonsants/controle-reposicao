@@ -1,6 +1,6 @@
-// ================================
-// DADOS INICIAIS
-// ================================
+// ==========================================
+// DADOS
+// ==========================================
 
 let products = [
     {
@@ -47,6 +47,7 @@ let products = [
     }
 ];
 
+
 let movements = [
     {
         type: "Venda",
@@ -66,9 +67,9 @@ let movements = [
 ];
 
 
-// ================================
-// FUNÇÕES AUXILIARES
-// ================================
+// ==========================================
+// FUNÇÕES BÁSICAS
+// ==========================================
 
 function $(id) {
     return document.getElementById(id);
@@ -91,13 +92,13 @@ function status(product) {
 
 function statusText(product) {
 
-    const currentStatus = status(product);
+    const current = status(product);
 
-    if (currentStatus === "urgent") {
+    if (current === "urgent") {
         return "Urgente";
     }
 
-    if (currentStatus === "low") {
+    if (current === "low") {
         return "Baixo";
     }
 
@@ -107,10 +108,8 @@ function statusText(product) {
 
 function statusBadge(product) {
 
-    const currentStatus = status(product);
-
     return `
-        <span class="badge badge-${currentStatus}">
+        <span class="badge badge-${status(product)}">
             ${statusText(product)}
         </span>
     `;
@@ -126,95 +125,101 @@ function suggestedQuantity(product) {
 }
 
 
-function notify(message) {
-
-    // Se existir o sistema de notificação
-    // original do projeto
-    if (typeof window.showNotification === "function") {
-        window.showNotification(message);
-        return;
-    }
-
-    // Fallback simples
-    alert(message);
-}
-
-
-// ================================
+// ==========================================
 // NAVEGAÇÃO
-// ================================
+// ==========================================
 
 function showPage(pageName) {
 
-    document.querySelectorAll(".page").forEach(page => {
+    document.querySelectorAll(".page").forEach(function(page) {
+
         page.classList.remove("active");
+
     });
 
-    const selectedPage = $(pageName);
 
-    if (selectedPage) {
-        selectedPage.classList.add("active");
+    const page = $(pageName);
+
+    if (page) {
+        page.classList.add("active");
     }
 
-    document.querySelectorAll(".nav-btn").forEach(button => {
+
+    document.querySelectorAll(".nav-btn").forEach(function(button) {
+
         button.classList.remove("active");
+
     });
 
-    const activeButton = document.querySelector(
+
+    const button = document.querySelector(
         `.nav-btn[data-page="${pageName}"]`
     );
 
-    if (activeButton) {
-        activeButton.classList.add("active");
+    if (button) {
+        button.classList.add("active");
     }
+
 
     renderAll();
 }
 
 
-document.querySelectorAll(".nav-btn").forEach(button => {
+document.querySelectorAll(".nav-btn").forEach(function(button) {
 
-    button.addEventListener("click", () => {
+    button.addEventListener("click", function() {
 
-        showPage(button.dataset.page);
+        showPage(this.dataset.page);
 
     });
 
 });
 
 
-// ================================
+// ==========================================
 // DASHBOARD
-// ================================
+// ==========================================
 
 function renderDashboard() {
 
     const total = products.length;
 
-    const normal = products.filter(
-        product => status(product) === "normal"
-    ).length;
 
-    const low = products.filter(
-        product => status(product) === "low"
-    ).length;
+    const normal = products.filter(function(product) {
 
-    const urgent = products.filter(
-        product => status(product) === "urgent"
-    ).length;
+        return status(product) === "normal";
+
+    }).length;
+
+
+    const low = products.filter(function(product) {
+
+        return status(product) === "low";
+
+    }).length;
+
+
+    const urgent = products.filter(function(product) {
+
+        return status(product) === "urgent";
+
+    }).length;
 
 
     if ($("total-products")) {
         $("total-products").textContent = total;
     }
 
+
     if ($("normal-products")) {
         $("normal-products").textContent = normal;
     }
 
+
     if ($("low-products")) {
         $("low-products").textContent = low;
     }
+
 
     if ($("urgent-products")) {
         $("urgent-products").textContent = urgent;
@@ -222,14 +227,13 @@ function renderDashboard() {
 
 
     renderAttentionTable();
-
     renderMovements();
 }
 
 
-// ================================
-// PRODUTOS QUE PRECISAM DE ATENÇÃO
-// ================================
+// ==========================================
+// PRODUTOS EM ATENÇÃO
+// ==========================================
 
 function renderAttentionTable() {
 
@@ -239,12 +243,15 @@ function renderAttentionTable() {
         return;
     }
 
-    const attentionProducts = products.filter(
-        product => status(product) !== "normal"
-    );
+
+    const attention = products.filter(function(product) {
+
+        return status(product) !== "normal";
+
+    });
 
 
-    if (attentionProducts.length === 0) {
+    if (attention.length === 0) {
 
         table.innerHTML = `
             <tr>
@@ -258,7 +265,7 @@ function renderAttentionTable() {
     }
 
 
-    table.innerHTML = attentionProducts.map(product => {
+    table.innerHTML = attention.map(function(product) {
 
         const index = products.indexOf(product);
 
@@ -275,31 +282,27 @@ function renderAttentionTable() {
 
                 <td>${product.min}</td>
 
-                <td>
-                    ${statusBadge(product)}
-                </td>
+                <td>${statusBadge(product)}</td>
 
                 <td>
-
                     <button
                         class="btn btn-primary"
-                        onclick="prepareReplenishment(${index})"
-                    >
+                        onclick="prepareReplenishment(${index})">
                         Repor
                     </button>
-
                 </td>
 
             </tr>
         `;
 
     }).join("");
+
 }
 
 
-// ================================
+// ==========================================
 // MOVIMENTAÇÕES
-// ================================
+// ==========================================
 
 function renderMovements() {
 
@@ -313,7 +316,9 @@ function renderMovements() {
     if (movements.length === 0) {
 
         list.innerHTML = `
-            <p>Nenhuma movimentação registrada.</p>
+            <div class="card-body">
+                Nenhuma movimentação registrada.
+            </div>
         `;
 
         return;
@@ -324,17 +329,18 @@ function renderMovements() {
         .slice()
         .reverse()
         .slice(0, 10)
-        .map(movement => {
+        .map(function(movement) {
 
             const sign =
                 movement.type === "Venda"
                     ? "-"
                     : "+";
 
+
             return `
                 <div class="movement">
 
-                    <div class="movement-main">
+                    <div>
 
                         <div class="movement-name">
                             ${movement.type}
@@ -358,9 +364,9 @@ function renderMovements() {
 }
 
 
-// ================================
-// LISTA DE PRODUTOS
-// ================================
+// ==========================================
+// PRODUTOS
+// ==========================================
 
 function renderProducts() {
 
@@ -378,7 +384,7 @@ function renderProducts() {
         : "";
 
 
-    const filteredProducts = products.filter(product => {
+    const filtered = products.filter(function(product) {
 
         return (
             product.name.toLowerCase().includes(search) ||
@@ -388,7 +394,7 @@ function renderProducts() {
     });
 
 
-    if (filteredProducts.length === 0) {
+    if (filtered.length === 0) {
 
         table.innerHTML = `
             <tr>
@@ -402,7 +408,7 @@ function renderProducts() {
     }
 
 
-    table.innerHTML = filteredProducts.map(product => {
+    table.innerHTML = filtered.map(function(product) {
 
         const index = products.indexOf(product);
 
@@ -419,9 +425,7 @@ function renderProducts() {
 
                 <td>${product.min}</td>
 
-                <td>
-                    ${statusBadge(product)}
-                </td>
+                <td>${statusBadge(product)}</td>
 
                 <td>
 
@@ -429,22 +433,19 @@ function renderProducts() {
 
                         <button
                             class="btn btn-secondary"
-                            onclick="openEditProduct(${index})"
-                        >
+                            onclick="openEditProduct(${index})">
                             Editar
                         </button>
 
                         <button
                             class="btn btn-success"
-                            onclick="registerSale(${index})"
-                        >
+                            onclick="registerSale(${index})">
                             Venda
                         </button>
 
                         <button
                             class="btn btn-danger"
-                            onclick="deleteProduct(${index})"
-                        >
+                            onclick="deleteProduct(${index})">
                             Excluir
                         </button>
 
@@ -456,12 +457,13 @@ function renderProducts() {
         `;
 
     }).join("");
+
 }
 
 
-// ================================
+// ==========================================
 // PESQUISA
-// ================================
+// ==========================================
 
 if ($("search-product")) {
 
@@ -473,9 +475,9 @@ if ($("search-product")) {
 }
 
 
-// ================================
-// MODAL DE PRODUTO
-// ================================
+// ==========================================
+// MODAL
+// ==========================================
 
 function openProductModal() {
 
@@ -485,19 +487,25 @@ function openProductModal() {
         return;
     }
 
+
     modal.classList.add("show");
 
+
     if ($("modal-title")) {
-        $("modal-title").textContent = "Novo produto";
+        $("modal-title").textContent =
+            "Novo produto";
     }
+
 
     if ($("product-form")) {
         $("product-form").reset();
     }
 
+
     if ($("edit-product-index")) {
         $("edit-product-index").value = "";
     }
+
 }
 
 
@@ -508,6 +516,7 @@ function closeProductModal() {
     if (modal) {
         modal.classList.remove("show");
     }
+
 }
 
 
@@ -519,46 +528,43 @@ function openEditProduct(index) {
         return;
     }
 
-    const modal = $("product-modal");
 
-    if (modal) {
-        modal.classList.add("show");
-    }
+    $("product-modal").classList.add("show");
 
-    if ($("modal-title")) {
-        $("modal-title").textContent =
-            "Editar produto";
-    }
 
-    if ($("edit-product-index")) {
-        $("edit-product-index").value = index;
-    }
+    $("modal-title").textContent =
+        "Editar produto";
 
-    if ($("product-sku")) {
-        $("product-sku").value = product.sku;
-    }
 
-    if ($("product-name")) {
-        $("product-name").value = product.name;
-    }
+    $("edit-product-index").value =
+        index;
 
-    if ($("product-section")) {
-        $("product-section").value = product.section;
-    }
 
-    if ($("product-stock")) {
-        $("product-stock").value = product.stock;
-    }
+    $("product-sku").value =
+        product.sku;
 
-    if ($("product-min")) {
-        $("product-min").value = product.min;
-    }
+
+    $("product-name").value =
+        product.name;
+
+
+    $("product-section").value =
+        product.section;
+
+
+    $("product-stock").value =
+        product.stock;
+
+
+    $("product-min").value =
+        product.min;
+
 }
 
 
-// ================================
+// ==========================================
 // SALVAR PRODUTO
-// ================================
+// ==========================================
 
 if ($("product-form")) {
 
@@ -572,14 +578,18 @@ if ($("product-form")) {
             const sku =
                 $("product-sku").value.trim();
 
+
             const name =
                 $("product-name").value.trim();
+
 
             const section =
                 $("product-section").value.trim();
 
+
             const stock =
                 Number($("product-stock").value);
+
 
             const min =
                 Number($("product-min").value);
@@ -587,9 +597,7 @@ if ($("product-form")) {
 
             if (!sku || !name || !section) {
 
-                notify(
-                    "Preencha todos os campos."
-                );
+                alert("Preencha todos os campos.");
 
                 return;
             }
@@ -602,9 +610,7 @@ if ($("product-form")) {
                 min < 0
             ) {
 
-                notify(
-                    "Informe valores válidos."
-                );
+                alert("Informe valores válidos.");
 
                 return;
             }
@@ -614,12 +620,16 @@ if ($("product-form")) {
                 $("edit-product-index").value;
 
 
-            const productData = {
+            const product = {
 
                 sku: sku,
+
                 name: name,
+
                 section: section,
+
                 stock: stock,
+
                 min: min
 
             };
@@ -627,21 +637,21 @@ if ($("product-form")) {
 
             if (editIndex === "") {
 
-                products.push(productData);
+                products.push(product);
 
-                notify(
+                alert(
                     "Produto adicionado com sucesso!"
                 );
 
             } else {
 
-                products[
-                    Number(editIndex)
-                ] = productData;
+                products[Number(editIndex)] =
+                    product;
 
-                notify(
+                alert(
                     "Produto atualizado com sucesso!"
                 );
+
             }
 
 
@@ -655,9 +665,9 @@ if ($("product-form")) {
 }
 
 
-// ================================
+// ==========================================
 // EXCLUIR PRODUTO
-// ================================
+// ==========================================
 
 function deleteProduct(index) {
 
@@ -668,12 +678,12 @@ function deleteProduct(index) {
     }
 
 
-    const confirmation = confirm(
+    const confirmDelete = confirm(
         `Deseja excluir o produto "${product.name}"?`
     );
 
 
-    if (!confirmation) {
+    if (!confirmDelete) {
         return;
     }
 
@@ -681,18 +691,19 @@ function deleteProduct(index) {
     products.splice(index, 1);
 
 
-    notify(
+    alert(
         "Produto excluído com sucesso!"
     );
 
 
     renderAll();
+
 }
 
 
-// ================================
+// ==========================================
 // REGISTRAR VENDA
-// ================================
+// ==========================================
 
 function registerSale(index) {
 
@@ -705,7 +716,7 @@ function registerSale(index) {
 
     if (product.stock <= 0) {
 
-        notify(
+        alert(
             "Esse produto está sem estoque."
         );
 
@@ -727,23 +738,25 @@ function registerSale(index) {
     });
 
 
-    notify(
+    alert(
         `Venda registrada: ${product.name}`
     );
 
 
     renderAll();
+
 }
 
 
-// ================================
+// ==========================================
 // REPOSIÇÃO
-// ================================
+// ==========================================
 
 function populateReplenishmentProducts() {
 
     const select =
         $("replenish-product");
+
 
     if (!select) {
         return;
@@ -761,13 +774,14 @@ function populateReplenishmentProducts() {
     `;
 
 
-    products.forEach((product, index) => {
+    products.forEach(function(product, index) {
 
         const option =
             document.createElement("option");
 
 
         option.value = index;
+
 
         option.textContent =
             `${product.sku} - ${product.name}`;
@@ -783,16 +797,13 @@ function populateReplenishmentProducts() {
         products[Number(currentValue)]
     ) {
 
-        select.value = currentValue;
+        select.value =
+            currentValue;
 
     }
 
 }
 
-
-// ================================
-// SELECIONAR PRODUTO PARA REPOSIÇÃO
-// ================================
 
 if ($("replenish-product")) {
 
@@ -802,6 +813,7 @@ if ($("replenish-product")) {
 
             const section =
                 $("replenish-section");
+
 
             if (!section) {
                 return;
@@ -833,9 +845,9 @@ if ($("replenish-product")) {
 }
 
 
-// ================================
-// FORMULÁRIO DE REPOSIÇÃO
-// ================================
+// ==========================================
+// REGISTRAR REPOSIÇÃO
+// ==========================================
 
 if ($("replenishment-form")) {
 
@@ -861,7 +873,7 @@ if ($("replenishment-form")) {
                 !products[Number(productIndex)]
             ) {
 
-                notify(
+                alert(
                     "Selecione um produto."
                 );
 
@@ -874,7 +886,7 @@ if ($("replenishment-form")) {
                 quantity <= 0
             ) {
 
-                notify(
+                alert(
                     "Informe uma quantidade válida."
                 );
 
@@ -883,9 +895,7 @@ if ($("replenishment-form")) {
 
 
             const product =
-                products[
-                    Number(productIndex)
-                ];
+                products[Number(productIndex)];
 
 
             product.stock += quantity;
@@ -902,7 +912,7 @@ if ($("replenishment-form")) {
             });
 
 
-            notify(
+            alert(
                 `Reposição registrada: +${quantity} ${product.name}`
             );
 
@@ -911,11 +921,14 @@ if ($("replenishment-form")) {
 
 
             if ($("replenish-section")) {
+
                 $("replenish-section").value = "";
+
             }
 
 
             setCurrentDateTime();
+
 
             renderAll();
 
@@ -925,9 +938,9 @@ if ($("replenishment-form")) {
 }
 
 
-// ================================
+// ==========================================
 // PREPARAR REPOSIÇÃO
-// ================================
+// ==========================================
 
 function prepareReplenishment(index) {
 
@@ -964,17 +977,19 @@ function prepareReplenishment(index) {
             suggestedQuantity(product);
 
     }
+
 }
 
 
-// ================================
+// ==========================================
 // ALERTAS
-// ================================
+// ==========================================
 
 function renderAlerts() {
 
     const container =
         $("alerts-container");
+
 
     if (!container) {
         return;
@@ -982,10 +997,11 @@ function renderAlerts() {
 
 
     const alerts =
-        products.filter(
-            product =>
-                status(product) !== "normal"
-        );
+        products.filter(function(product) {
+
+            return status(product) !== "normal";
+
+        });
 
 
     if (alerts.length === 0) {
@@ -1008,7 +1024,7 @@ function renderAlerts() {
 
 
     container.innerHTML =
-        alerts.map(product => {
+        alerts.map(function(product) {
 
             const currentStatus =
                 status(product);
@@ -1019,11 +1035,8 @@ function renderAlerts() {
 
 
             return `
-
                 <div class="alert-card
-                    ${currentStatus === "low"
-                        ? "low"
-                        : ""}">
+                    ${currentStatus === "low" ? "low" : ""}">
 
                     <div class="alert-title">
 
@@ -1079,29 +1092,29 @@ function renderAlerts() {
 
                     <button
                         class="btn btn-primary"
-                        onclick="prepareReplenishment(${index})"
-                    >
+                        onclick="prepareReplenishment(${index})">
+
                         Registrar reposição
+
                     </button>
 
                 </div>
-
             `;
 
         }).join("");
+
 }
 
 
-// ================================
+// ==========================================
 // DATA E HORA
-// ================================
+// ==========================================
 
 function setCurrentDateTime() {
 
-    const now = new Date();
+    const now =
+        new Date();
 
-
-    // Data exibida no dashboard
 
     if ($("current-date")) {
 
@@ -1111,17 +1124,17 @@ function setCurrentDateTime() {
     }
 
 
-    // Data do formulário
-
     if ($("replenish-date")) {
 
         const year =
             now.getFullYear();
 
+
         const month =
             String(
                 now.getMonth() + 1
             ).padStart(2, "0");
+
 
         const day =
             String(
@@ -1135,8 +1148,6 @@ function setCurrentDateTime() {
     }
 
 
-    // Hora do formulário
-
     if ($("replenish-time")) {
 
         const hours =
@@ -1144,13 +1155,13 @@ function setCurrentDateTime() {
                 now.getHours()
             ).padStart(2, "0");
 
+
         const minutes =
             String(
                 now.getMinutes()
             ).padStart(2, "0");
 
 
-        // CORRIGIDO
         $("replenish-time").value =
             `${hours}:${minutes}`;
 
@@ -1159,9 +1170,9 @@ function setCurrentDateTime() {
 }
 
 
-// ================================
+// ==========================================
 // ATUALIZAÇÃO GERAL
-// ================================
+// ==========================================
 
 function renderAll() {
 
@@ -1176,9 +1187,9 @@ function renderAll() {
 }
 
 
-// ================================
-// INICIALIZAÇÃO
-// ================================
+// ==========================================
+// INICIAR SISTEMA
+// ==========================================
 
 setCurrentDateTime();
 
