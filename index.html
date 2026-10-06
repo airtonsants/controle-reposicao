@@ -1,1 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Reposição</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">📦</div>
+
+            <div>
+                <strong>Controle de</strong>
+                <strong>Reposição</strong>
+                <span>Gestão de estoque</span>
+            </div>
+        </div>
+
+        <nav class="menu">
+
+            <button class="nav-button active" data-view="dashboard">
+                <span>📊</span>
+                Dashboard
+            </button>
+
+            <button class="nav-button" data-view="produtos">
+                <span>📦</span>
+                Produtos
+            </button>
+
+            <button class="nav-button" data-view="reposicao">
+                <span>➕</span>
+                Registrar Reposição
+            </button>
+
+            <button class="nav-button" data-view="alertas">
+                <span>🔔</span>
+                Alertas
+                <span id="nav-alert-count" class="alert-count">0</span>
+            </button>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            Sistema de controle e reposição de estoque
+        </div>
+
+    </aside>
+
+
+    <!-- CONTEÚDO -->
+    <div class="main-area">
+
+        <header class="header">
+
+            <div>
+                <p class="header-eyebrow">CONTROLE DE ESTOQUE</p>
+                <h1 id="active-title">Dashboard</h1>
+            </div>
+
+            <span class="prototype-label">
+                Sistema de Reposição
+            </span>
+
+        </header>
+
+
+        <main class="content">
+
+            <div id="notice" class="notice hidden"></div>
+
+
+            <!-- ================= DASHBOARD ================= -->
+
+            <section id="dashboard" class="section-view">
+
+                <div class="metrics">
+
+                    <article class="card metric-card">
+                        <div class="metric-top">
+                            <span>Total de produtos</span>
+                            <span class="metric-icon blue">📦</span>
+                        </div>
+
+                        <strong id="metric-total">0</strong>
+                        <small>Produtos cadastrados</small>
+                    </article>
+
+
+                    <article class="card metric-card">
+                        <div class="metric-top">
+                            <span>Estoque normal</span>
+                            <span class="metric-icon green">✓</span>
+                        </div>
+
+                        <strong id="metric-normal">0</strong>
+                        <small>Produtos em situação normal</small>
+                    </article>
+
+
+                    <article class="card metric-card">
+                        <div class="metric-top">
+                            <span>Estoque baixo</span>
+                            <span class="metric-icon yellow">📉</span>
+                        </div>
+
+                        <strong id="metric-low">0</strong>
+                        <small>Precisam de atenção</small>
+                    </article>
+
+
+                    <article class="card metric-card">
+                        <div class="metric-top">
+                            <span>Reposição urgente</span>
+                            <span class="metric-icon red">⚠</span>
+                        </div>
+
+                        <strong id="metric-urgent">0</strong>
+                        <small>Estoque igual ou abaixo do mínimo</small>
+                    </article>
+
+                </div>
+
+
+                <div class="dashboard-grid">
+
+                    <!-- ATENÇÃO -->
+                    <section class="card table-card">
+
+                        <div class="section-header">
+                            <h2>Produtos que precisam de atenção</h2>
+                            <span id="attention-count"></span>
+                        </div>
+
+                        <div class="table-wrap">
+
+                            <table>
+
+                                <thead>
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Seção</th>
+                                        <th>Estoque atual</th>
+                                        <th>Estoque mínimo</th>
+                                        <th>Status</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="attention-body"></tbody>
+
+                            </table>
+
+                        </div>
+
+                        <p id="attention-empty" class="empty hidden">
+                            Nenhum produto precisa de atenção.
+                        </p>
+
+                    </section>
+
+
+                    <!-- MOVIMENTAÇÕES -->
+                    <section class="card movements-card">
+
+                        <h2>Movimentações recentes</h2>
+
+                        <div id="movement-list"></div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- FLUXO -->
+                <section class="card flow-card">
+
+                    <h2>Fluxo do estoque</h2>
+
+                    <div class="flow">
+
+                        <div class="flow-step">
+                            <span>📦</span>
+                            Reposição
+                        </div>
+
+                        <div class="arrow">→</div>
+
+                        <div class="flow-step">
+                            <span>📋</span>
+                            Registro no sistema
+                        </div>
+
+                        <div class="arrow">→</div>
+
+                        <div class="flow-step">
+                            <span>🛒</span>
+                            Venda
+                        </div>
+
+                        <div class="arrow">→</div>
+
+                        <div class="flow-step">
+                            <span>📉</span>
+                            Baixa automática
+                        </div>
+
+                        <div class="arrow">→</div>
+
+                        <div class="flow-step">
+                            <span>⚠</span>
+                            Estoque mínimo
+                        </div>
+
+                        <div class="arrow">→</div>
+
+                        <div class="flow-step">
+                            <span>🔔</span>
+                            Alerta ao responsável
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ================= PRODUTOS ================= -->
+
+            <section id="produtos" class="section-view hidden">
+
+                <div class="page-top">
+
+                    <p>
+                        Cadastre, edite e acompanhe os produtos do estoque.
+                    </p>
+
+                    <button id="open-product-form" class="btn-primary">
+                        + Novo produto
+                    </button>
+
+                </div>
+
+
+                <!-- FORMULÁRIO -->
+
+                <form id="product-form" class="card form-card hidden">
+
+                    <div class="form-header">
+
+                        <h2 id="product-form-heading">
+                            Cadastrar produto
+                        </h2>
+
+                        <button type="button" id="cancel-product" class="btn-secondary">
+                            Cancelar
+                        </button>
+
+                    </div>
+
+
+                    <div class="form-grid">
+
+                        <div class="field-group">
+                            <label for="new-sku">Código / SKU</label>
+                            <input id="new-sku" required maxlength="24">
+                        </div>
+
+                        <div class="field-group">
+                            <label for="new-name">Nome do produto</label>
+                            <input id="new-name" required maxlength="70">
+                        </div>
+
+                        <div class="field-group">
+                            <label for="new-section">Seção</label>
+                            <input id="new-section" required maxlength="35">
+                        </div>
+
+                        <div class="field-group">
+                            <label for="new-stock">Estoque atual</label>
+                            <input id="new-stock" type="number" min="0" step="1" required>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="new-minimum">Estoque mínimo</label>
+                            <input id="new-minimum" type="number" min="1" step="1" required>
+                        </div>
+
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        Salvar produto
+                    </button>
+
+                </form>
+
+
+                <!-- LISTA -->
+
+                <section class="card table-card">
+
+                    <div class="section-header">
+                        <h2>Produtos cadastrados</h2>
+                    </div>
+
+                    <div class="table-wrap">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Produto</th>
+                                    <th>Seção</th>
+                                    <th>Estoque</th>
+                                    <th>Mínimo</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="products-body"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </section>
+
+            </section>
+
+
+            <!-- ================= REPOSIÇÃO ================= -->
+
+            <section id="reposicao" class="section-view hidden">
+
+                <p class="page-description">
+                    Registre a entrada de produtos no estoque.
+                </p>
+
+
+                <div class="replenishment-grid">
+
+                    <form id="replenishment-form" class="card form-card">
+
+                        <h2>Registrar reposição</h2>
+
+                        <div class="form-grid">
+
+                            <div class="field-group full">
+
+                                <label for="replenish-product">
+                                    Produto
+                                </label>
+
+                                <select id="replenish-product" required>
+                                    <option value="">
+                                        Selecione um produto
+                                    </option>
+                                </select>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label for="replenish-section">
+                                    Seção
+                                </label>
+
+                                <input id="replenish-section" readonly>
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label for="replenish-quantity">
+                                    Quantidade
+                                </label>
+
+                                <input
+                                    id="replenish-quantity"
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label for="replenish-date">
+                                    Data
+                                </label>
+
+                                <input
+                                    id="replenish-date"
+                                    type="date"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="field-group">
+
+                                <label for="replenish-time">
+                                    Horário
+                                </label>
+
+                                <input
+                                    id="replenish-time"
+                                    type="time"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <button type="submit" class="btn-primary full-button">
+                            Registrar reposição
+                        </button>
+
+                    </form>
+
+
+                    <!-- RESUMO -->
+
+                    <aside class="card summary-card">
+
+                        <div class="summary-icon">
+                            📋
+                        </div>
+
+                        <h2>Resumo da reposição</h2>
+
+                        <div id="replenishment-summary">
+                            Nenhuma reposição registrada nesta sessão.
+                        </div>
+
+                    </aside>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= ALERTAS ================= -->
+
+            <section id="alertas" class="section-view hidden">
+
+                <p class="page-description">
+                    Produtos que atingiram ou ficaram abaixo do estoque mínimo.
+                </p>
+
+                <div id="alerts-list" class="alerts-grid"></div>
+
+                <div id="alerts-empty" class="card empty-alert hidden">
+
+                    <strong>✓ Tudo em dia!</strong>
+
+                    <p>
+                        Nenhum alerta de reposição ativo.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
