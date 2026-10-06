@@ -1,141 +1,79 @@
-// ============================================================
-// CONTROLE DE REPOSIÇÃO
-// Sistema independente para VS Code
-// ============================================================
+// ================================
+// DADOS INICIAIS
+// ================================
 
-
-// ================= DADOS INICIAIS =================
-
-const products = [
-
+let products = [
     {
-        id: 1,
         sku: "PRD-001",
         name: "Produto A",
         section: "Seção 02",
         stock: 4,
-        min: 5,
-        alertAt: "2026-10-06T09:20:00"
+        min: 5
     },
-
     {
-        id: 2,
         sku: "PRD-002",
         name: "Produto B",
         section: "Seção 01",
         stock: 18,
-        min: 6,
-        alertAt: null
+        min: 6
     },
-
     {
-        id: 3,
         sku: "PRD-003",
         name: "Produto C",
         section: "Seção 03",
         stock: 7,
-        min: 6,
-        alertAt: null
+        min: 6
     },
-
     {
-        id: 4,
         sku: "PRD-004",
         name: "Produto D",
         section: "Seção 01",
         stock: 2,
-        min: 4,
-        alertAt: "2026-10-06T10:35:00"
+        min: 4
     },
-
     {
-        id: 5,
         sku: "PRD-005",
         name: "Produto E",
         section: "Seção 04",
         stock: 32,
-        min: 8,
-        alertAt: null
+        min: 8
     },
-
     {
-        id: 6,
         sku: "PRD-006",
         name: "Produto F",
         section: "Seção 02",
         stock: 11,
-        min: 9,
-        alertAt: null
+        min: 9
     }
+];
 
+let movements = [
+    {
+        type: "Venda",
+        product: "Produto A",
+        quantity: 1
+    },
+    {
+        type: "Reposição",
+        product: "Produto B",
+        quantity: 15
+    },
+    {
+        type: "Venda",
+        product: "Produto D",
+        quantity: 1
+    }
 ];
 
 
-const movements = [
-
-    {
-        kind: "Venda",
-        name: "Produto A",
-        quantity: 1,
-        at: "2026-10-06T09:20:00"
-    },
-
-    {
-        kind: "Reposição",
-        name: "Produto B",
-        quantity: 15,
-        at: "2026-10-06T09:05:00"
-    },
-
-    {
-        kind: "Venda",
-        name: "Produto D",
-        quantity: 1,
-        at: "2026-10-06T08:40:00"
-    }
-
-];
-
-
-let nextId = 7;
-let editingProductId = null;
-
-
-// ================= UTILITÁRIOS =================
+// ================================
+// FUNÇÕES AUXILIARES
+// ================================
 
 function $(id) {
     return document.getElementById(id);
 }
 
-
-function escapeHtml(value) {
-
-    return String(value).replace(/[&<>"']/g, char => {
-
-        return {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        }[char];
-
-    });
-
-}
-
-
-function dateTime(iso) {
-
-    return new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short"
-    }).format(new Date(iso));
-
-}
-
-
-// ================= STATUS DO PRODUTO =================
 
 function status(product) {
 
@@ -151,192 +89,201 @@ function status(product) {
 }
 
 
-function badge(product) {
+function statusText(product) {
 
-    const productStatus = status(product);
+    const currentStatus = status(product);
 
-    let label;
-
-    if (productStatus === "urgent") {
-        label = "Necessita reposição";
+    if (currentStatus === "urgent") {
+        return "Urgente";
     }
 
-    else if (productStatus === "low") {
-        label = "Estoque baixo";
+    if (currentStatus === "low") {
+        return "Baixo";
     }
 
-    else {
-        label = "Normal";
-    }
+    return "Normal";
+}
+
+
+function statusBadge(product) {
+
+    const currentStatus = status(product);
 
     return `
-        <span class="badge badge-${productStatus}">
-            ${label}
+        <span class="badge badge-${currentStatus}">
+            ${statusText(product)}
         </span>
     `;
 }
 
 
-// ================= NOTIFICAÇÕES =================
+function suggestedQuantity(product) {
 
-function notify(message, error = false) {
-
-    const notice = $("notice");
-
-    notice.textContent = message;
-
-    notice.className = `
-        notice
-        ${error ? "error" : "success"}
-    `;
-
-    setTimeout(() => {
-        notice.classList.add("hidden");
-    }, 4000);
-
+    return Math.max(
+        1,
+        product.min * 4 - product.stock
+    );
 }
 
 
-// ================= NAVEGAÇÃO =================
+function notify(message) {
 
-function switchView(view) {
+    // Se existir o sistema de notificação
+    // original do projeto
+    if (typeof window.showNotification === "function") {
+        window.showNotification(message);
+        return;
+    }
 
-    document.querySelectorAll(".section-view").forEach(section => {
-
-        section.classList.toggle(
-            "hidden",
-            section.id !== view
-        );
-
-    });
-
-
-    document.querySelectorAll(".nav-button").forEach(button => {
-
-        const active = button.dataset.view === view;
-
-        button.classList.toggle("active", active);
-
-    });
-
-
-    const titles = {
-
-        dashboard: "Dashboard",
-
-        produtos: "Produtos",
-
-        reposicao: "Registrar Reposição",
-
-        alertas: "Alertas de Reposição"
-
-    };
-
-
-    $("active-title").textContent = titles[view];
-
+    // Fallback simples
+    alert(message);
 }
 
 
-// ================= ATUALIZAÇÃO DA SEÇÃO =================
+// ================================
+// NAVEGAÇÃO
+// ================================
 
-function updateSection() {
+function showPage(pageName) {
 
-    const product = products.find(
-        item => String(item.id) === $("replenish-product").value
+    document.querySelectorAll(".page").forEach(page => {
+        page.classList.remove("active");
+    });
+
+    const selectedPage = $(pageName);
+
+    if (selectedPage) {
+        selectedPage.classList.add("active");
+    }
+
+    document.querySelectorAll(".nav-btn").forEach(button => {
+        button.classList.remove("active");
+    });
+
+    const activeButton = document.querySelector(
+        `.nav-btn[data-page="${pageName}"]`
     );
 
+    if (activeButton) {
+        activeButton.classList.add("active");
+    }
 
-    $("replenish-section").value =
-        product ? product.section : "";
-
+    renderAll();
 }
 
 
-// ================= RENDERIZAÇÃO =================
+document.querySelectorAll(".nav-btn").forEach(button => {
 
-function render() {
+    button.addEventListener("click", () => {
+
+        showPage(button.dataset.page);
+
+    });
+
+});
+
+
+// ================================
+// DASHBOARD
+// ================================
+
+function renderDashboard() {
+
+    const total = products.length;
+
+    const normal = products.filter(
+        product => status(product) === "normal"
+    ).length;
+
+    const low = products.filter(
+        product => status(product) === "low"
+    ).length;
 
     const urgent = products.filter(
         product => status(product) === "urgent"
-    );
+    ).length;
 
 
-    const attention = products.filter(
+    if ($("total-products")) {
+        $("total-products").textContent = total;
+    }
+
+    if ($("normal-products")) {
+        $("normal-products").textContent = normal;
+    }
+
+    if ($("low-products")) {
+        $("low-products").textContent = low;
+    }
+
+    if ($("urgent-products")) {
+        $("urgent-products").textContent = urgent;
+    }
+
+
+    renderAttentionTable();
+
+    renderMovements();
+}
+
+
+// ================================
+// PRODUTOS QUE PRECISAM DE ATENÇÃO
+// ================================
+
+function renderAttentionTable() {
+
+    const table = $("attention-table");
+
+    if (!table) {
+        return;
+    }
+
+    const attentionProducts = products.filter(
         product => status(product) !== "normal"
     );
 
 
-    // ---------------- MÉTRICAS ----------------
+    if (attentionProducts.length === 0) {
 
-    $("metric-total").textContent =
-        products.length;
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Nenhum produto precisa de atenção.
+                </td>
+            </tr>
+        `;
 
-
-    $("metric-normal").textContent =
-        products.filter(
-            product => status(product) === "normal"
-        ).length;
-
-
-    $("metric-low").textContent =
-        products.filter(
-            product => status(product) === "low"
-        ).length;
+        return;
+    }
 
 
-    $("metric-urgent").textContent =
-        urgent.length;
+    table.innerHTML = attentionProducts.map(product => {
 
+        const index = products.indexOf(product);
 
-    $("nav-alert-count").textContent =
-        urgent.length;
-
-
-    // ---------------- ATENÇÃO ----------------
-
-    $("attention-count").textContent =
-        `${attention.length} produto${attention.length === 1 ? "" : "s"}`;
-
-
-    $("attention-empty").classList.toggle(
-        "hidden",
-        attention.length !== 0
-    );
-
-
-    $("attention-body").innerHTML =
-        attention.map(product => `
-
+        return `
             <tr>
 
-                <td>
-                    <strong>
-                        ${escapeHtml(product.name)}
-                    </strong>
-                </td>
+                <td>${product.sku}</td>
+
+                <td>${product.name}</td>
+
+                <td>${product.section}</td>
+
+                <td>${product.stock}</td>
+
+                <td>${product.min}</td>
 
                 <td>
-                    ${escapeHtml(product.section)}
-                </td>
-
-                <td>
-                    ${product.stock} unidades
-                </td>
-
-                <td>
-                    Mínimo: ${product.min}
-                </td>
-
-                <td>
-                    ${badge(product)}
+                    ${statusBadge(product)}
                 </td>
 
                 <td>
 
                     <button
-                        class="btn-secondary"
-                        data-replenish="${product.id}"
+                        class="btn btn-primary"
+                        onclick="prepareReplenishment(${index})"
                     >
                         Repor
                     </button>
@@ -344,901 +291,895 @@ function render() {
                 </td>
 
             </tr>
+        `;
 
-        `).join("");
+    }).join("");
+}
 
 
-    // ---------------- PRODUTOS ----------------
+// ================================
+// MOVIMENTAÇÕES
+// ================================
 
-    $("products-body").innerHTML =
-        products.map(product => `
+function renderMovements() {
 
+    const list = $("movement-list");
+
+    if (!list) {
+        return;
+    }
+
+
+    if (movements.length === 0) {
+
+        list.innerHTML = `
+            <p>Nenhuma movimentação registrada.</p>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML = movements
+        .slice()
+        .reverse()
+        .slice(0, 10)
+        .map(movement => {
+
+            const sign =
+                movement.type === "Venda"
+                    ? "-"
+                    : "+";
+
+            return `
+                <div class="movement">
+
+                    <div class="movement-main">
+
+                        <div class="movement-name">
+                            ${movement.type}
+                        </div>
+
+                        <div class="movement-info">
+                            ${movement.product}
+                        </div>
+
+                    </div>
+
+                    <div class="movement-qty">
+                        ${sign}${movement.quantity}
+                    </div>
+
+                </div>
+            `;
+
+        })
+        .join("");
+}
+
+
+// ================================
+// LISTA DE PRODUTOS
+// ================================
+
+function renderProducts() {
+
+    const table = $("products-table");
+
+    if (!table) {
+        return;
+    }
+
+
+    const searchInput = $("search-product");
+
+    const search = searchInput
+        ? searchInput.value.toLowerCase()
+        : "";
+
+
+    const filteredProducts = products.filter(product => {
+
+        return (
+            product.name.toLowerCase().includes(search) ||
+            product.sku.toLowerCase().includes(search)
+        );
+
+    });
+
+
+    if (filteredProducts.length === 0) {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Nenhum produto encontrado.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    table.innerHTML = filteredProducts.map(product => {
+
+        const index = products.indexOf(product);
+
+        return `
             <tr>
 
-                <td>
-                    <strong>
-                        ${escapeHtml(product.sku)}
-                    </strong>
-                </td>
+                <td>${product.sku}</td>
+
+                <td>${product.name}</td>
+
+                <td>${product.section}</td>
+
+                <td>${product.stock}</td>
+
+                <td>${product.min}</td>
 
                 <td>
-                    <strong>
-                        ${escapeHtml(product.name)}
-                    </strong>
-                </td>
-
-                <td>
-                    ${escapeHtml(product.section)}
-                </td>
-
-                <td>
-                    ${product.stock} unidades
-                </td>
-
-                <td>
-                    ${product.min} unidades
-                </td>
-
-                <td>
-                    ${badge(product)}
+                    ${statusBadge(product)}
                 </td>
 
                 <td>
 
-                    <button
-                        class="btn-secondary"
-                        data-edit-product="${product.id}"
-                    >
-                        Editar
-                    </button>
+                    <div class="actions">
 
-                    <button
-                        class="btn-secondary"
-                        data-delete-product="${product.id}"
-                    >
-                        Remover
-                    </button>
+                        <button
+                            class="btn btn-secondary"
+                            onclick="openEditProduct(${index})"
+                        >
+                            Editar
+                        </button>
 
-                    <button
-                        class="btn-secondary"
-                        data-sale="${product.id}"
-                        ${product.stock === 0 ? "disabled" : ""}
-                    >
-                        Registrar venda
-                    </button>
+                        <button
+                            class="btn btn-success"
+                            onclick="registerSale(${index})"
+                        >
+                            Venda
+                        </button>
+
+                        <button
+                            class="btn btn-danger"
+                            onclick="deleteProduct(${index})"
+                        >
+                            Excluir
+                        </button>
+
+                    </div>
 
                 </td>
 
             </tr>
+        `;
 
-        `).join("");
+    }).join("");
+}
 
 
-    // ---------------- ALERTAS ----------------
+// ================================
+// PESQUISA
+// ================================
 
-    $("alerts-empty").classList.toggle(
-        "hidden",
-        urgent.length !== 0
+if ($("search-product")) {
+
+    $("search-product").addEventListener(
+        "input",
+        renderProducts
     );
-
-
-    $("alerts-list").innerHTML =
-        urgent.map(product => `
-
-            <article class="card alert-card">
-
-                <div class="alert-title">
-
-                    <div class="alert-icon">
-                        ⚠
-                    </div>
-
-                    <div>
-
-                        <h2>
-                            ${escapeHtml(product.name)}
-                        </h2>
-
-                        <p>
-                            ${escapeHtml(product.section)}
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="alert-data">
-
-                    <div>
-
-                        <span>
-                            Estoque atual
-                        </span>
-
-                        <strong>
-                            ${product.stock} unidades
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Estoque mínimo
-                        </span>
-
-                        <strong>
-                            ${product.min} unidades
-                        </strong>
-
-                    </div>
-
-
-                    <div class="suggested">
-
-                        <span>
-                            Quantidade sugerida
-                        </span>
-
-                        <strong>
-                            Repor ${Math.max(
-                                1,
-                                product.min * 4 - product.stock
-                            )} unidades
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="alert-date">
-
-                    Alerta:
-                    ${dateTime(
-                        product.alertAt ||
-                        new Date().toISOString()
-                    )}
-
-                </div>
-
-
-                <button
-                    class="btn-primary"
-                    style="width:100%"
-                    data-replenish="${product.id}"
-                >
-                    Marcar como reposto
-                </button>
-
-            </article>
-
-        `).join("");
-
-
-    // ---------------- MOVIMENTAÇÕES ----------------
-
-    $("movement-list").innerHTML =
-        movements.slice(0, 5).map(movement => `
-
-            <div class="movement">
-
-                <span
-                    class="
-                        movement-dot
-                        ${
-                            movement.kind === "Venda"
-                            ? "movement-sale"
-                            : "movement-replenishment"
-                        }
-                    "
-                ></span>
-
-
-                <div class="movement-info">
-
-                    <p>
-                        <strong>
-                            ${escapeHtml(movement.kind)}
-                        </strong>
-                        ·
-                        ${escapeHtml(movement.name)}
-                    </p>
-
-                    <small>
-                        ${
-                            movement.kind === "Venda"
-                            ? "−"
-                            : "+"
-                        }
-
-                        ${movement.quantity}
-
-                        ${
-                            movement.quantity === 1
-                            ? "unidade"
-                            : "unidades"
-                        }
-                    </small>
-
-                </div>
-
-
-                <time>
-                    ${dateTime(movement.at)}
-                </time>
-
-            </div>
-
-        `).join("");
-
-
-    // ---------------- SELECT ----------------
-
-    const select = $("replenish-product");
-
-    const selected = select.value;
-
-
-    select.innerHTML = `
-
-        <option value="">
-            Selecione um produto
-        </option>
-
-        ${products.map(product => `
-
-            <option value="${product.id}">
-
-                ${escapeHtml(product.name)}
-                ·
-                ${escapeHtml(product.sku)}
-
-            </option>
-
-        `).join("")}
-
-    `;
-
-
-    select.value = selected;
-
-    updateSection();
 
 }
 
 
-// ================= ABRIR REPOSIÇÃO =================
+// ================================
+// MODAL DE PRODUTO
+// ================================
 
-function openReplenishment(id) {
+function openProductModal() {
 
-    switchView("reposicao");
+    const modal = $("product-modal");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.add("show");
+
+    if ($("modal-title")) {
+        $("modal-title").textContent = "Novo produto";
+    }
+
+    if ($("product-form")) {
+        $("product-form").reset();
+    }
+
+    if ($("edit-product-index")) {
+        $("edit-product-index").value = "";
+    }
+}
 
 
-    const product =
-        products.find(item => item.id === id);
+function closeProductModal() {
 
+    const modal = $("product-modal");
+
+    if (modal) {
+        modal.classList.remove("show");
+    }
+}
+
+
+function openEditProduct(index) {
+
+    const product = products[index];
+
+    if (!product) {
+        return;
+    }
+
+    const modal = $("product-modal");
+
+    if (modal) {
+        modal.classList.add("show");
+    }
+
+    if ($("modal-title")) {
+        $("modal-title").textContent =
+            "Editar produto";
+    }
+
+    if ($("edit-product-index")) {
+        $("edit-product-index").value = index;
+    }
+
+    if ($("product-sku")) {
+        $("product-sku").value = product.sku;
+    }
+
+    if ($("product-name")) {
+        $("product-name").value = product.name;
+    }
+
+    if ($("product-section")) {
+        $("product-section").value = product.section;
+    }
+
+    if ($("product-stock")) {
+        $("product-stock").value = product.stock;
+    }
+
+    if ($("product-min")) {
+        $("product-min").value = product.min;
+    }
+}
+
+
+// ================================
+// SALVAR PRODUTO
+// ================================
+
+if ($("product-form")) {
+
+    $("product-form").addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+
+            const sku =
+                $("product-sku").value.trim();
+
+            const name =
+                $("product-name").value.trim();
+
+            const section =
+                $("product-section").value.trim();
+
+            const stock =
+                Number($("product-stock").value);
+
+            const min =
+                Number($("product-min").value);
+
+
+            if (!sku || !name || !section) {
+
+                notify(
+                    "Preencha todos os campos."
+                );
+
+                return;
+            }
+
+
+            if (
+                !Number.isFinite(stock) ||
+                !Number.isFinite(min) ||
+                stock < 0 ||
+                min < 0
+            ) {
+
+                notify(
+                    "Informe valores válidos."
+                );
+
+                return;
+            }
+
+
+            const editIndex =
+                $("edit-product-index").value;
+
+
+            const productData = {
+
+                sku: sku,
+                name: name,
+                section: section,
+                stock: stock,
+                min: min
+
+            };
+
+
+            if (editIndex === "") {
+
+                products.push(productData);
+
+                notify(
+                    "Produto adicionado com sucesso!"
+                );
+
+            } else {
+
+                products[
+                    Number(editIndex)
+                ] = productData;
+
+                notify(
+                    "Produto atualizado com sucesso!"
+                );
+            }
+
+
+            closeProductModal();
+
+            renderAll();
+
+        }
+    );
+
+}
+
+
+// ================================
+// EXCLUIR PRODUTO
+// ================================
+
+function deleteProduct(index) {
+
+    const product = products[index];
 
     if (!product) {
         return;
     }
 
 
-    $("replenish-product").value =
-        String(id);
+    const confirmation = confirm(
+        `Deseja excluir o produto "${product.name}"?`
+    );
 
 
-    $("replenish-quantity").value =
-        Math.max(
-            1,
-            product.min * 4 - product.stock
+    if (!confirmation) {
+        return;
+    }
+
+
+    products.splice(index, 1);
+
+
+    notify(
+        "Produto excluído com sucesso!"
+    );
+
+
+    renderAll();
+}
+
+
+// ================================
+// REGISTRAR VENDA
+// ================================
+
+function registerSale(index) {
+
+    const product = products[index];
+
+    if (!product) {
+        return;
+    }
+
+
+    if (product.stock <= 0) {
+
+        notify(
+            "Esse produto está sem estoque."
         );
 
+        return;
+    }
 
-    updateSection();
+
+    product.stock -= 1;
 
 
-    $("replenish-quantity").focus();
+    movements.push({
+
+        type: "Venda",
+
+        product: product.name,
+
+        quantity: 1
+
+    });
+
+
+    notify(
+        `Venda registrada: ${product.name}`
+    );
+
+
+    renderAll();
+}
+
+
+// ================================
+// REPOSIÇÃO
+// ================================
+
+function populateReplenishmentProducts() {
+
+    const select =
+        $("replenish-product");
+
+    if (!select) {
+        return;
+    }
+
+
+    const currentValue =
+        select.value;
+
+
+    select.innerHTML = `
+        <option value="">
+            Selecione um produto
+        </option>
+    `;
+
+
+    products.forEach((product, index) => {
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = index;
+
+        option.textContent =
+            `${product.sku} - ${product.name}`;
+
+
+        select.appendChild(option);
+
+    });
+
+
+    if (
+        currentValue !== "" &&
+        products[Number(currentValue)]
+    ) {
+
+        select.value = currentValue;
+
+    }
 
 }
 
 
-// ================= MENU =================
+// ================================
+// SELECIONAR PRODUTO PARA REPOSIÇÃO
+// ================================
 
-document.querySelectorAll(".nav-button")
-    .forEach(button => {
+if ($("replenish-product")) {
 
-        button.addEventListener("click", () => {
+    $("replenish-product").addEventListener(
+        "change",
+        function() {
 
-            switchView(
-                button.dataset.view
-            );
+            const section =
+                $("replenish-section");
 
-        });
-
-    });
-
-
-// ================= AÇÕES DAS TABELAS =================
-
-document.addEventListener("click", event => {
-
-
-    // ---------- REPOR ----------
-
-    const replenishButton =
-        event.target.closest("[data-replenish]");
-
-
-    if (replenishButton) {
-
-        openReplenishment(
-            Number(
-                replenishButton.dataset.replenish
-            )
-        );
-
-        return;
-    }
-
-
-    // ---------- EDITAR ----------
-
-    const editButton =
-        event.target.closest("[data-edit-product]");
-
-
-    if (editButton) {
-
-        const product =
-            products.find(
-                item =>
-                    item.id ===
-                    Number(
-                        editButton.dataset.editProduct
-                    )
-            );
-
-
-        if (!product) {
-            return;
-        }
-
-
-        editingProductId = product.id;
-
-
-        $("new-sku").value =
-            product.sku;
-
-        $("new-name").value =
-            product.name;
-
-        $("new-section").value =
-            product.section;
-
-        $("new-stock").value =
-            product.stock;
-
-        $("new-minimum").value =
-            product.min;
-
-
-        switchView("produtos");
-
-
-        $("product-form")
-            .classList.remove("hidden");
-
-
-        $("product-form-heading")
-            .textContent =
-            "Editar produto";
-
-
-        $("new-sku").focus();
-
-
-        return;
-    }
-
-
-    // ---------- REMOVER ----------
-
-    const deleteButton =
-        event.target.closest("[data-delete-product]");
-
-
-    if (deleteButton) {
-
-        const id =
-            Number(
-                deleteButton.dataset.deleteProduct
-            );
-
-
-        const index =
-            products.findIndex(
-                item => item.id === id
-            );
-
-
-        if (index < 0) {
-            return;
-        }
-
-
-        const removed =
-            products.splice(index, 1)[0];
-
-
-        render();
-
-
-        notify(
-            `${removed.name} removido.`
-        );
-
-
-        return;
-    }
-
-
-    // ---------- VENDA ----------
-
-    const saleButton =
-        event.target.closest("[data-sale]");
-
-
-    if (saleButton) {
-
-        const product =
-            products.find(
-                item =>
-                    item.id ===
-                    Number(
-                        saleButton.dataset.sale
-                    )
-            );
-
-
-        if (
-            !product ||
-            product.stock < 1
-        ) {
-            return;
-        }
-
-
-        const previousStatus =
-            status(product);
-
-
-        product.stock -= 1;
-
-
-        if (
-            previousStatus !== "urgent" &&
-            status(product) === "urgent"
-        ) {
-
-            product.alertAt =
-                new Date().toISOString();
-
-        }
-
-
-        movements.unshift({
-
-            kind: "Venda",
-
-            name: product.name,
-
-            quantity: 1,
-
-            at: new Date().toISOString()
-
-        });
-
-
-        render();
-
-
-        notify(
-            `Venda de ${product.name} registrada. Estoque atual: ${product.stock} unidades.`
-        );
-
-    }
-
-});
-
-
-// ================= NOVO PRODUTO =================
-
-$("open-product-form")
-    .addEventListener("click", () => {
-
-        editingProductId = null;
-
-
-        $("product-form").reset();
-
-
-        $("product-form-heading")
-            .textContent =
-            "Cadastrar produto";
-
-
-        $("product-form")
-            .classList.remove("hidden");
-
-
-        $("new-sku").focus();
-
-    });
-
-
-// ================= CANCELAR PRODUTO =================
-
-$("cancel-product")
-    .addEventListener("click", () => {
-
-        editingProductId = null;
-
-
-        $("product-form").reset();
-
-
-        $("product-form")
-            .classList.add("hidden");
-
-    });
-
-
-// ================= SALVAR PRODUTO =================
-
-$("product-form")
-    .addEventListener("submit", event => {
-
-        event.preventDefault();
-
-
-        const sku =
-            $("new-sku").value.trim();
-
-
-        const name =
-            $("new-name").value.trim();
-
-
-        const section =
-            $("new-section").value.trim();
-
-
-        const stock =
-            Number(
-                $("new-stock").value
-            );
-
-
-        const min =
-            Number(
-                $("new-minimum").value
-            );
-
-
-        // VALIDAÇÃO
-
-        if (
-
-            !sku ||
-            !name ||
-            !section ||
-            !Number.isInteger(stock) ||
-            stock < 0 ||
-            !Number.isInteger(min) ||
-            min < 1
-
-        ) {
-
-            notify(
-                "Preencha todos os campos com valores válidos.",
-                true
-            );
-
-            return;
-        }
-
-
-        // SKU DUPLICADO
-
-        const duplicate =
-            products.some(product =>
-
-                product.sku.toLowerCase() ===
-                sku.toLowerCase() &&
-
-                product.id !==
-                editingProductId
-
-            );
-
-
-        if (duplicate) {
-
-            notify(
-                "Este SKU já está cadastrado.",
-                true
-            );
-
-            return;
-        }
-
-
-        // EDITAR
-
-        if (editingProductId !== null) {
-
-            const product =
-                products.find(
-                    item =>
-                        item.id ===
-                        editingProductId
-                );
-
-
-            if (!product) {
+            if (!section) {
                 return;
             }
 
 
-            Object.assign(product, {
+            if (this.value === "") {
 
-                sku,
+                section.value = "";
 
-                name,
+                return;
+            }
 
-                section,
 
-                stock,
+            const product =
+                products[Number(this.value)];
 
-                min,
 
-                alertAt:
-                    stock <= min
-                        ? (
-                            product.alertAt ||
-                            new Date().toISOString()
-                        )
-                        : null
+            if (product) {
+
+                section.value =
+                    product.section;
+
+            }
+
+        }
+    );
+
+}
+
+
+// ================================
+// FORMULÁRIO DE REPOSIÇÃO
+// ================================
+
+if ($("replenishment-form")) {
+
+    $("replenishment-form").addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+
+            const productIndex =
+                $("replenish-product").value;
+
+
+            const quantity =
+                Number(
+                    $("replenish-quantity").value
+                );
+
+
+            if (
+                productIndex === "" ||
+                !products[Number(productIndex)]
+            ) {
+
+                notify(
+                    "Selecione um produto."
+                );
+
+                return;
+            }
+
+
+            if (
+                !Number.isFinite(quantity) ||
+                quantity <= 0
+            ) {
+
+                notify(
+                    "Informe uma quantidade válida."
+                );
+
+                return;
+            }
+
+
+            const product =
+                products[
+                    Number(productIndex)
+                ];
+
+
+            product.stock += quantity;
+
+
+            movements.push({
+
+                type: "Reposição",
+
+                product: product.name,
+
+                quantity: quantity
 
             });
 
 
             notify(
-                `${name} atualizado com sucesso.`
+                `Reposição registrada: +${quantity} ${product.name}`
             );
 
-        }
+
+            this.reset();
 
 
-        // NOVO
-
-        else {
-
-            products.push({
-
-                id: nextId++,
-
-                sku,
-
-                name,
-
-                section,
-
-                stock,
-
-                min,
-
-                alertAt:
-                    stock <= min
-                        ? new Date().toISOString()
-                        : null
-
-            });
+            if ($("replenish-section")) {
+                $("replenish-section").value = "";
+            }
 
 
-            notify(
-                `${name} cadastrado com sucesso.`
-            );
+            setCurrentDateTime();
+
+            renderAll();
 
         }
+    );
+
+}
 
 
-        editingProductId = null;
+// ================================
+// PREPARAR REPOSIÇÃO
+// ================================
+
+function prepareReplenishment(index) {
+
+    showPage("reposicao");
 
 
-        $("product-form").reset();
+    const select =
+        $("replenish-product");
 
 
-        $("product-form")
-            .classList.add("hidden");
+    if (!select) {
+        return;
+    }
 
 
-        render();
-
-    });
+    select.value = index;
 
 
-// ================= SELECT PRODUTO =================
-
-$("replenish-product")
-    .addEventListener(
-        "change",
-        updateSection
+    select.dispatchEvent(
+        new Event("change")
     );
 
 
-// ================= REPOSIÇÃO =================
-
-$("replenishment-form")
-    .addEventListener("submit", event => {
-
-        event.preventDefault();
+    const product =
+        products[index];
 
 
-        const product =
-            products.find(
-                item =>
-                    String(item.id) ===
-                    $("replenish-product").value
-            );
+    if (
+        product &&
+        $("replenish-quantity")
+    ) {
+
+        $("replenish-quantity").value =
+            suggestedQuantity(product);
+
+    }
+}
 
 
-        const quantity =
-            Number(
-                $("replenish-quantity").value
-            );
+// ================================
+// ALERTAS
+// ================================
+
+function renderAlerts() {
+
+    const container =
+        $("alerts-container");
+
+    if (!container) {
+        return;
+    }
 
 
-        const date =
-            $("replenish-date").value;
+    const alerts =
+        products.filter(
+            product =>
+                status(product) !== "normal"
+        );
 
 
-        const time =
-            $("replenish-time").value;
+    if (alerts.length === 0) {
+
+        container.innerHTML = `
+            <div class="content-card">
+
+                <div class="card-body">
+
+                    Nenhum produto precisa
+                    de reposição.
+
+                </div>
+
+            </div>
+        `;
+
+        return;
+    }
 
 
-        const replenishmentDate =
-            new Date(
-                `${date}T${time}`
-            );
+    container.innerHTML =
+        alerts.map(product => {
+
+            const currentStatus =
+                status(product);
 
 
-        if (
-
-            !product ||
-
-            !Number.isInteger(quantity) ||
-
-            quantity < 1 ||
-
-            !date ||
-
-            !time ||
-
-            Number.isNaN(
-                replenishmentDate.getTime()
-            )
-
-        ) {
-
-            notify(
-                "Informe produto, quantidade, data e horário válidos.",
-                true
-            );
-
-            return;
-        }
+            const index =
+                products.indexOf(product);
 
 
-        // ADICIONA ESTOQUE
+            return `
 
-        product.stock += quantity;
+                <div class="alert-card
+                    ${currentStatus === "low"
+                        ? "low"
+                        : ""}">
 
+                    <div class="alert-title">
 
-        // REMOVE ALERTA
+                        ${
+                            currentStatus === "urgent"
+                                ? "🔴 Reposição urgente"
+                                : "🟡 Estoque baixo"
+                        }
 
-        if (
-            product.stock > product.min
-        ) {
-
-            product.alertAt = null;
-
-        }
-
-
-        // REGISTRA MOVIMENTAÇÃO
-
-        movements.unshift({
-
-            kind: "Reposição",
-
-            name: product.name,
-
-            quantity,
-
-            at: replenishmentDate.toISOString()
-
-        });
+                    </div>
 
 
-        // RESUMO
+                    <div class="alert-info">
 
-        $("replenishment-summary")
-            .innerHTML = `
+                        <strong>
+                            ${product.name}
+                        </strong>
 
-                <p>
-                    <strong>
-                        ${escapeHtml(product.name)}
-                    </strong>
-                </p>
+                        <br>
 
-                <p>
-                    Quantidade reposta:
-                    <strong>
-                        ${quantity} unidades
-                    </strong>
-                </p>
+                        SKU:
+                        ${product.sku}
 
-                <p>
-                    Estoque após reposição:
-                    <strong>
-                        ${product.stock} unidades
-                    </strong>
-                </p>
+                        <br>
+
+                        Seção:
+                        ${product.section}
+
+                        <br>
+
+                        Estoque atual:
+                        ${product.stock}
+
+                        <br>
+
+                        Estoque mínimo:
+                        ${product.min}
+
+                    </div>
+
+
+                    <div class="suggestion">
+
+                        Sugestão de reposição:
+                        ${suggestedQuantity(product)}
+                        unidades
+
+                    </div>
+
+
+                    <br>
+
+
+                    <button
+                        class="btn btn-primary"
+                        onclick="prepareReplenishment(${index})"
+                    >
+                        Registrar reposição
+                    </button>
+
+                </div>
 
             `;
 
-
-        $("replenish-quantity").value = "";
-
-
-        render();
+        }).join("");
+}
 
 
-        notify(
-            `Reposição de ${product.name} registrada com sucesso.`
-        );
+// ================================
+// DATA E HORA
+// ================================
 
-    });
+function setCurrentDateTime() {
 
-
-// ================= DATA E HORA =================
-
-const now = new Date();
+    const now = new Date();
 
 
-$("replenish-date").value =
-    `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-        now.getDate()
-    ).padStart(2, "0")}`;
+    // Data exibida no dashboard
+
+    if ($("current-date")) {
+
+        $("current-date").textContent =
+            now.toLocaleDateString("pt-BR");
+
+    }
 
 
-$("replenish-time").value =
-    `${String(
-        now.getHours()
-    ).padStart(2, "0")}:${String(
-        now.getMinutes()
-    ).padStart(2, "0")`;
+    // Data do formulário
+
+    if ($("replenish-date")) {
+
+        const year =
+            now.getFullYear();
+
+        const month =
+            String(
+                now.getMonth() + 1
+            ).padStart(2, "0");
+
+        const day =
+            String(
+                now.getDate()
+            ).padStart(2, "0");
 
 
-// ================= INICIALIZAÇÃO =================
+        $("replenish-date").value =
+            `${year}-${month}-${day}`;
 
-switchView("dashboard");
+    }
 
-render();
+
+    // Hora do formulário
+
+    if ($("replenish-time")) {
+
+        const hours =
+            String(
+                now.getHours()
+            ).padStart(2, "0");
+
+        const minutes =
+            String(
+                now.getMinutes()
+            ).padStart(2, "0");
+
+
+        // CORRIGIDO
+        $("replenish-time").value =
+            `${hours}:${minutes}`;
+
+    }
+
+}
+
+
+// ================================
+// ATUALIZAÇÃO GERAL
+// ================================
+
+function renderAll() {
+
+    renderDashboard();
+
+    renderProducts();
+
+    populateReplenishmentProducts();
+
+    renderAlerts();
+
+}
+
+
+// ================================
+// INICIALIZAÇÃO
+// ================================
+
+setCurrentDateTime();
+
+renderAll();
